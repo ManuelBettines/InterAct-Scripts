@@ -60,23 +60,23 @@ def load_table(inpath, conn, table_name):
     print(f"{table_name} Table Loaded from: %s" % inpath)
 
 
+def age_function(conn):
+    cursor = conn.cursor()
+    cursor.execute('ALTER TABLE GridStandAge ADD COLUMN scaled_age_factor FLOAT')
+    cursor.execute('UPDATE GridStandAge SET scaled_age_factor = CASE WHEN Age > 0 THEN 0.00012/0.8489 * POWER((Age),2) ELSE 1 END')
+    conn.commit()
+    print("'Age function' included")
+
+
 def build_interm_query(growthform, ef_s=1, ef_e=18, ldf_s=3, ldf_e=6):
     """
     Function to build the intermediate query
     """
     query_str = f"CREATE TABLE 'Intermediate{growthform}EcoEF' AS \
                   SELECT Speciation{growthform}.EcoTypeID, "
-
-    scaled_age_factor = (
-        f"CASE WHEN (SELECT Age FROM GridStandAge WHERE Age > 0.1) THEN 0.2/0.8489 * POWER((SELECT Age FROM GridStandAge),2) "
-        f"ELSE 1 END"
-    )
-
+    
     for i in range(ef_s, ef_e + 1, 1):
-        if i == 1:
-            q = f" ({scaled_age_factor} * Sum([EF{i}]*[{growthform}Specfrac])) AS {growthform}EcoEF{i}, "
-        else:
-            q = f"Sum([EF{i}]*[{growthform}Specfrac]) AS {growthform}EcoEF{i}, "
+        q = f"Sum([EF{i}]*[{growthform}Specfrac]) AS {growthform}EcoEF{i}, "
         query_str += q
 
     for j in range(ldf_s, ldf_e + 1, 1):
@@ -87,7 +87,7 @@ def build_interm_query(growthform, ef_s=1, ef_e=18, ldf_s=3, ldf_e=6):
     query_str += f" FROM Speciation{growthform} \
                  INNER JOIN EF ON Speciation{growthform}.VegID = EF.VegID \
                  GROUP BY Speciation{growthform}.EcoTypeID;"
-
+    
     return query_str
 
 
@@ -119,14 +119,21 @@ def Ecotype_Crop_EF(conn,EFa=1, EFz=18, LDFa=3, LDFz=6):
     print("'IntermediateCropEcoEF' Table Created")
 
 
-def build_final_query(ef_s=1, ef_e=18, ldf_s=3, ldf_e=6, csv_file_path='stand_age.csv'):
+def build_final_query(ef_s=1, ef_e=18, ldf_s=3, ldf_e=6):
     query_str = "CREATE TABLE 'OutputGridEF' AS \
                 SELECT GridGrowthForm.gridID, "
     for i in range(ef_s, ef_e + 1, 1):
-        q = f"Sum([EcotypeFrac]*(([CropFrac]*[CropEcoEF{i}])\
-        +([TreeFrac]*[TreeEcoEF{i}])\
-        +([HerbFrac]*[HerbEcoEF{i}])\
-        +([ShrubFrac]*[ShrubEcoEF{i}]))) AS EF{i}, "
+        if i == 1:
+            q = f"Sum([scaled_age_factor]*[EcotypeFrac]*(([CropFrac]*[CropEcoEF{i}])\
+            +([TreeFrac]*[TreeEcoEF{i}])\
+            +([HerbFrac]*[HerbEcoEF{i}])\
+            +([ShrubFrac]*[ShrubEcoEF{i}]))) AS EF{i}, "
+        else:
+            q = f"Sum([EcotypeFrac]*(([CropFrac]*[CropEcoEF{i}])\
+            +([TreeFrac]*[TreeEcoEF{i}])\
+            +([HerbFrac]*[HerbEcoEF{i}])\
+            +([ShrubFrac]*[ShrubEcoEF{i}]))) AS EF{i}, "
+
         query_str += q
 
     for j in range(ldf_s, ldf_e + 1, 1):
@@ -137,7 +144,8 @@ def build_final_query(ef_s=1, ef_e=18, ldf_s=3, ldf_e=6, csv_file_path='stand_ag
         query_str += q2
 
     query_str = query_str.rstrip(', ')
-    query_str += " FROM ((((GridGrowthForm INNER JOIN GridEcotype ON GridGrowthForm.gridID = GridEcotype.gridID)  \
+    query_str += " FROM (((((GridGrowthForm INNER JOIN GridEcotype ON GridGrowthForm.gridID = GridEcotype.gridID)  \
+    INNER JOIN GridStandAge ON GridEcotype.gridID = GridStandAge.gridID) \
     INNER JOIN IntermediateHerbEcoEF ON GridEcotype.EcotypeID = IntermediateHerbEcoEF.EcoTypeID)                  \
     INNER JOIN IntermediateShrubEcoEF ON IntermediateHerbEcoEF.EcoTypeID = IntermediateShrubEcoEF.EcoTypeID)      \
     INNER JOIN IntermediateTreeEcoEF ON IntermediateShrubEcoEF.EcoTypeID = IntermediateTreeEcoEF.EcoTypeID)       \
@@ -166,6 +174,7 @@ def run_M3GEFP_DB(db_connection, EFa, EFz, LDFa, LDFz, output_csv_path):
     # Queries need to be executed in specific order
     # due to dependency of tables generated from previous queries
     print("\n BEGINNING M3GEFP DB GENERATION")
+    age_function(db_connection)
     Ecotype_Tree_EF(db_connection,EFa, EFz, LDFa, LDFz)
     Ecotype_Shrub_EF(db_connection,EFa, EFz, LDFa, LDFz)
     Ecotype_Herb_EF(db_connection,EFa, EFz, LDFa, LDFz)
