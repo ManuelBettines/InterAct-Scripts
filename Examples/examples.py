@@ -17,6 +17,9 @@ def find_nearest(array, value):
 idx_lon = find_nearest(ds.lon[0,:], INSERT_LON)
 idx_lat = find_nearest(ds.lat[:,0], INSERT_LAT)
 
+idx_lon = find_nearest(ds.lon[idx_lat,:], INSERT_LON)
+idx_lat = find_nearest(ds.lat[:,isx_lon], INSERT_LAT)
+
 # Load CHIMERE output
 ds = xr.open_dataset("path_to_output/file_name.nc")
 
