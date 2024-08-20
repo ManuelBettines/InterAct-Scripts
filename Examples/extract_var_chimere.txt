@@ -2,23 +2,26 @@ module load nco
 module load cdo
 
 #####################
-#OLD CHIMERE VERSION#
+#NEW CHIMERE VERSION#
 #####################
 
 #Extract VAR
-for i in out*
+for i in *reduit.nc
 do
-ncks -v Times,lon,lat,VAR ${i} ${i}_sub
+ncks -v Times,nav_lon,nav_lat,VAR ${i} ${i}_sub
 done
 
+# Combine all files in one
+ncrcat *sub_2 new_file_name.nc
+
+
+#################################################################################
 # Remove extra hour in output (No need of this step for new CHIMERE version v2023)
 for i in *sub	
 do
 ncrcat -d Time,0,23 ${i} ${i}_2	
 done
 
-# Combine all files in one
-ncrcat *sub_2 new_file_name.nc
 
 
 ##########################################################################
