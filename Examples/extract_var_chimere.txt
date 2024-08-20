@@ -1,0 +1,34 @@
+module load nco
+module load cdo
+
+#####################
+#OLD CHIMERE VERSION#
+#####################
+
+#Extract VAR
+for i in out*
+do
+ncks -v Times,lon,lat,VAR ${i} ${i}_sub
+done
+
+# Remove extra hour in output (No need of this step for new CHIMERE version v2023)
+for i in *sub	
+do
+ncrcat -d Time,0,23 ${i} ${i}_2	
+done
+
+# Combine all files in one
+ncrcat *sub_2 new_file_name.nc
+
+
+##########################################################################
+#Examples with new version (extract variables and sum to new variable OA)#
+##########################################################################
+
+for i in chim_nest-FINLAND6_20190*; 
+do
+ncks -v Times,nav_lon,nav_lat,pBSOA1,pBSOA2,pBSOA3,pBSOA4,pASOA1,pASOA2,pASOA3,pASOA4,pOPOA1,pOPOA2,pOPOA3,pOPOA4,pOPOA5,pOPOA6,pPOA1,pPOA2,pPOA3,pPOA4,pPOA5,pPOA6 ${i} ${i}_sub; 
+ncap2 -s 'OA=pBSOA1+pBSOA2+pBSOA3+pBSOA4+pASOA1+pASOA2+pASOA3+pASOA4+pOPOA1+pOPOA2+pOPOA3+pOPOA4+pOPOA5+pOPOA6+pPOA1+pPOA2+pPOA3+pPOA4+pPOA5+pPOA6' ${i}_sub ${i}_sub_2; 
+done
+
+ncrcat *sub_2 new_file_name.nc
