@@ -12,7 +12,7 @@ ncks -v Times,nav_lon,nav_lat,VAR ${i} ${i}_sub
 done
 
 # Combine all files in one
-ncrcat *sub_2 new_file_name.nc
+ncrcat *sub new_file_name.nc
 
 
 #################################################################################
