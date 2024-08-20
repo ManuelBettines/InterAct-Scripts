@@ -26,6 +26,7 @@ ds = xr.open_dataset("path_to_output/file_name.nc")
 # Subset CHIMERE output
 sub_PM25_ts = ds.PM25.sel(bottom_top=0).sel(south_north=idx_lat).sel(west_east=idx_lon) # Ground level PM2.5 timeseries at specific lat lon
 sub_PM25_map = ds.PM25.sel(bottom_top=0).mean('Time') # Average over Time for each grid cell
+sub_base = ds.PM25.sel(bottom_top=1).sel(x=idx_lon).sel(y=idx_lat).sel(time_counter=slice(start_date,end_date))
 
 # Convert Output from UTC to Local Time (if needed)
 times = ds.Times.astype(str)
