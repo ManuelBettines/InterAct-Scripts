@@ -94,35 +94,3 @@ date_limit_1 = datetime.strptime("2017-07-29", "%Y-%m-%d")
 ax.set_xlim(left=date_limit, right=date_limit_1)
 #fig.savefig('../figures/SIZE_DIS_AME_COMBINED.png', dpi=100, bbox_inches='tight')
 plt.show()
-
-# Calculate the growth rate in nm/h
-#time_diffs = np.diff(time).astype('timedelta64[h]').astype(int)  # Time differences in hours
-
-# Average distribution for each time point (mean across size bins)
-
-result_matrix = selected_columns.T[1]
-#risultato = np.dot(result_matrix.T , lista_d)
-#mean_distribution = np.mean(risultato, axis=0)
-
-# Calculate the growth rate as the difference in average distribution between time points
-#agrowth_rate = np.diff(risultato) / time_diffs  # Growth rate in unit per hour
-
-# Create a DataFrame to save results
-growth_rate_df = pd.DataFrame({
-    'Time': time,  # Exclude the first time point to match the length of growth_rate
-    'CONC': result_matrix
-})
-
-# Save to CSV
-growth_rate_df.to_csv('growth_rate.csv', index=False)
-
-# Plot the growth rate
-fig_gr, ax_gr = plt.subplots(figsize=(12, 6))
-ax_gr.plot(time, result_matrix, marker='o', linestyle='-')
-ax_gr.set_xlabel('Date', fontsize=14)
-ax_gr.set_ylabel('Growth Rate', fontsize=14)
-ax_gr.set_title('Growth Rate over Time', fontsize=16)
-ax_gr.tick_params(axis='both', which='major', labelsize=12)
-fig_gr.tight_layout()
-#fig_gr.savefig('growth_rate_plot.png', dpi=100, bbox_inches='tight')
-plt.show()
